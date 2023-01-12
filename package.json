@@ -1,0 +1,19 @@
+{
+  "name": "tinyscript",
+  "version": "1.0.0",
+  "description": "lexer and parser for javascript based language",
+  "main": "lexer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon node lexer.js"
+  },
+  "keywords": [
+    "lexer",
+    "parser"
+  ],
+  "author": "Alex Lenart",
+  "license": "ISC",
+  "dependencies": {
+    "nodemon": "^2.0.20"
+  }
+}
