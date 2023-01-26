@@ -38,13 +38,18 @@ class Parser {
 
 
 
+    // expression() {
+    //     return this.term();
+    // }
+
+
 
     term() {
         
         // recursively goes into the higher precendence grammar rules until it returns a value
-        console.log('before factor');
+       //  console.log('before factor');
         let left = this.factor();
-        console.log('after factor');
+        // console.log('after factor');
 
        while(this.match('+', '-')) {
         
@@ -57,24 +62,15 @@ class Parser {
     }
 
 
-    
-    primary() {
-        if(this.match('NUMBER', 'STRING')) {
-            // console.log('primary value', this.getPreviousToken().value);
-            return this.getPreviousToken().value;
-        }
-    }
-
-
 
     factor() {
 
-        let left = this.primary();
+        let left = this.unary();
 
         while(this.match('/', '*')) {
 
             let operator = this.getPreviousToken().value;
-            let right = this.primary();
+            let right = this.unary();
             
             // console.log('before left', left);
             left = new BinaryOperation(left, operator, right);
@@ -82,6 +78,32 @@ class Parser {
         }
 
         return left;
+    }
+
+
+
+    unary() {
+        
+        if(this.match('-', '!')) {
+            let operator = this.getPreviousToken().value;
+            let right = this.unary();
+            return new Unary(operator, right);
+        }
+
+        return this.primary();
+    }
+
+
+     primary() {
+        if(this.match('NUMBER', 'STRING')) {
+            return this.getPreviousToken().value;
+        }
+
+        if(this.match('(')) {
+            let left = this.statement();
+            this.consume(')', 'Expected ) after expression');
+            return new Expression(left);
+        }
     }
 
 
@@ -139,12 +161,12 @@ class Parser {
 
     
     // After parsing the expression, the parser looks for the closing ) by calling consume().
-    // consume(type) {
-    //     console.log('in consume', type);
-    //     if (this.checkTokenType(type)) return this.advance();
+    consume(type) {
+        console.log('in consume', type);
+        if (this.checkTokenType(type)) return this.advance();
 
-    //    // throw this.error(this.peek(), message);
-    // }
+       return this.parseError(this.peek(), message);
+    }
    
 
     // Then, the ( ... )* loop in the rule maps to a while loop. We need to know when to exit that loop. 
@@ -185,13 +207,20 @@ class Parser {
     }
 
 
-    parseError(message) {
-        return message;
+    parseError(token, message) {
+        return `${message} instead of ${token}`;
     }
 
 
 };
 
+
+
+class Expression {
+    constructor(expression) {
+        this.expression = expression;
+    }
+};
 
 
 
@@ -206,6 +235,15 @@ class BinaryOperation {
 
 
 
+class Unary {
+    constructor(operator, literal) {
+        this.operator = operator;
+        this.literal = literal;
+    }
+};
+
+
+
 
 
 let tinyScript = new Lexer(input);
@@ -213,9 +251,9 @@ let programTokens = tinyScript.scanInput();
 
 
 let tinyParser = new Parser(programTokens);
-console.log(tinyParser.parse());
-// let ast = tinyParser.parse();
-// console.log('parser tokens', JSON.stringify(ast));
+// console.log(tinyParser.parse());
+let ast = tinyParser.parse();
+console.log('parser tokens', JSON.stringify(ast, null, 3));
 
 
 
