@@ -6,7 +6,9 @@ const keywords = {
     'declare': 'DECLARE',
     'let': 'LET',
     'const': 'CONST',
-    'function': 'FUNCTION'
+    'function': 'FUNCTION',
+    'true': 'BOOLEAN',
+    'false': 'BOOLEAN'
 };
 
 module.exports = { keywords };

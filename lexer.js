@@ -2,6 +2,8 @@ const { optable } = require('./optable.js');
 const { keywords } = require('./keywords.js');
 const { Token } = require('./token.js');
 
+const { input } = require('./program.js');
+
 // split lexer, parser and interpreter into three parts to make it modular
 
 class Lexer {
@@ -41,7 +43,7 @@ class Lexer {
                     // if (op === '=' && peep === '=') {
                     //     new Token('COMPARE', '==', start, end);
                     //     break;
-                    // }
+                    //}
                         
                     
                     let start = this.position();
@@ -71,6 +73,7 @@ class Lexer {
             }
      }
 
+     return this.tokens;
     // EOF (end of file) stuff goes here
 }
     
@@ -217,28 +220,9 @@ class Lexer {
 
 
 
-
-let input = `function myfn() {
-    // this is a comment
-    let a = 90;
-    let mystring = "alex";
-    if(myString == undefined) {
-        return 'string is not defined';
-    } else {
-        return a;
-    }
-}`;
-
-let inputTwo = `routine name<> { }`;
-
-let inputThree = `function myfn() {
-    let a = 'my string';
-    // this variable is a string
-}`;
-
-
-
 let tinyScript = new Lexer(input);
 
 tinyScript.scanInput();
 console.log(tinyScript);
+
+module.exports = { Lexer };
