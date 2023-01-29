@@ -1,10 +1,7 @@
 const { optable } = require('./optable.js');
 const { keywords } = require('./keywords.js');
 const { Token } = require('./token.js');
-
 const { input } = require('./program.js');
-
-// split lexer, parser and interpreter into three parts to make it modular
 
 class Lexer {
 
@@ -21,146 +18,168 @@ class Lexer {
 
     scanInput() {
     
-        while(this.cursor < this.sourceLength) {  
+        while(this.end()) {  
             
-            // move this down?
             this._process_space();
 
-            // Look it up in the table of operators
-            // Hashmap should be O(1)
             let op = optable[this.char];
             op !== undefined ? op = this.char : op = undefined;
 
-            let peep = this.source.charAt(this.cursor + 1);
-
             switch(this.char) {
                 case op:
-                    // if I can eliminate outer while loop for the parser we don't need break and can use 1 line
-                    if (op === '/' && peep === '/') {
+                   
+                    if (op === '/' && this.look() === '/') {
                         this._process_comment();
                         break;
                     }
-                    // if (op === '=' && peep === '=') {
-                    //     new Token('COMPARE', '==', start, end);
-                    //     break;
-                    //}
+
+                    if (op === '=' && this.look() === '=') {
+
+                        this._process_token('COMPARE', '==');
+                        break;
+                    }
+
+                    if(op === '<' && this.look() === '=') {
+
+                        this._process_token('LESS_EQUAL', '<=');
+                        break;
+                    }
+
+                    if(op === '>' && this.look() === '=') {
+
+                        this._process_token('GREATER_EQUAL', '>=');
+                        break;
+                    }
+
+                    if(op === '!' && this.look() === '=') {
+
+                        this._process_token('NOT_EQUAL', '!=');
+                        break;
+                    }
                         
                     
                     let start = this.position();
-                    this.cursor++;
-                    this.column++;
+                    this.forward();
                     let end = this.position();
                     this.tokens.push(new Token(op, this.char, start, end));
-
-                    this.char = this.source.charAt(this.cursor);
                     break;
+                
 
                 default:
-                    console.log('in switch default');
+                    
                     try {
-                        if (this._isalpha())  this._process_identifier();
-                        else if (this._isdigit())  this._process_number();
-                        else if (this.char === '"' || this.char === "'")   this._process_string();
-        
-                        else throw new Error(`Token error at ${this.cursor} ${this.char}`);
+                        if (this._isalpha(this.char))  this._process_identifier();
+                        else if (this._isdigit(this.char))  this._process_number();
+                        else if (this.char === '"' || this.char === "'")   this._process_string(this.char);
+                        
+                        else throw new Error(`Unexpected token error. ${this.char} is not a valid token at line ${this.line} column ${this.column}`);
 
                       } catch(err) {
-                        this.cursor = this.sourceLength;
-                        return console.log(err.message);
+                            // trigger end condition for main while loop
+                            this.cursor = this.sourceLength;
+                            return console.error(err.message);
                       }
 
                     break;
             }
      }
-
+     
+     // this.tokens.push(new Token(toks.EOF, "", null, this.line));
      return this.tokens;
-    // EOF (end of file) stuff goes here
-}
     
-    lookAhead(something) {
-        return;
-    }
+};
+
+
+    // Helper functions
 
     position() {
         return { cursor: this.cursor, line: this.line, column: this.column };
     }
 
-    _iswhitespace() {
-        return this.char == ' ' || this.char == '\t' || this.char == '\r';
+    end() {
+        return this.cursor < this.sourceLength;
+    }
+
+    look() {
+        return this.source.charAt(this.cursor + 1);
+    }
+
+    current() {
+        this.char = this.source.charAt(this.cursor); 
+        return this.source.charAt(this.cursor);
+    }
+
+    forward() {
+        this.cursor += 1;
+        this.column += 1;
+    }
+
+
+
+    // Character test functions
+
+    _iswhitespace(s) {
+        return s == ' ' || s == '\t';
     }
 
   
-    _isnewline() {
-        return this.char === '\r' || this.char === '\n';
+    _isnewline(l) {
+        return l === '\r' || l === '\n';
     }
 
-    _isdigit() {
-        return this.char >= '0' && this.char <= '9';
+    _isdigit(d) {
+        return d >= '0' && d <= '9';
     }
 
-    _isalpha() {
-        return (this.char >= 'a' && this.char <= 'z') ||
-            (this.char >= 'A' && this.char <= 'Z') ||
-            this.char === '_' || this.char === '$';
+    _isalpha(a) {
+        return (a >= 'a' && a <= 'z') ||
+            (a >= 'A' && a <= 'Z') ||
+            a === '_' || a === '$';
     }
 
-
-    // make these 3 functions one flexible function
   
+    
     _process_number() {
 
-    let start = this.position();
-    let endcursor = this.cursor;
-    this.char = this.source.charAt(endcursor);
+        let start = this.position();
+        while(this._isdigit(this.current()) && this.end()) {
+    
+            this.forward();
+        }
+        
+        let value = this.source.substring(start.cursor, this.cursor);
+        let end = this.position();
 
-    while (endcursor < this.sourceLength && this._isdigit()) {
-        endcursor++;
-        this.column++;
-        this.char = this.source.charAt(endcursor);
+        return this.tokens.push(new Token('NUMBER', value, start, end));
+    
     }
 
-    let value = this.source.substring(this.cursor, endcursor);
-    this.cursor = endcursor;
-    let end = this.position();
-
-    return this.tokens.push(new Token('NUMBER', value, start, end));
-    }
 
     _process_comment() {
+        
+        let start = this.position();
+        while(!this._isnewline(this.current()) && this.end()) {
+    
+            this.forward();
+        }
+        
+        let value = this.source.substring(start.cursor, this.cursor);
+        let end = this.position();
 
-    let start = this.position();
-    let endcursor = this.cursor + 2;
-    this.char = this.source.charAt(endcursor);
+        return this.tokens.push(new Token('COMMENT', value, start, end));
 
-    while ((endcursor < this.sourceLength) && (!this._isnewline()) ) {
-        endcursor++;
-        this.column++;
-        this.char = this.source.charAt(endcursor);
     }
 
-    let value = this.source.substring(this.cursor, endcursor);
-    this.cursor = endcursor + 1;
-    let end = this.position();
-
-    return this.tokens.push(new Token('COMMENT', value, start, end));
-    }
 
     _process_identifier() {
-
+       
         let start = this.position();
-        let endcursor = this.cursor;
-        this.char = this.source.charAt(endcursor);
-
-        while (endcursor < this.sourceLength && this._isalpha()) {
-            endcursor++;
-            this.column++;
-            this.char = this.source.charAt(endcursor);
+        while(this._isalpha(this.current()) && this.end()) {
+    
+            this.forward();
         }
-
-        let value = this.source.substring(this.cursor, endcursor);
-
-        // update cursor to correct position
-        this.cursor = endcursor;
+        
+        let value = this.source.substring(start.cursor, this.cursor);
         let end = this.position();
 
         // return keyword token if it exists
@@ -169,52 +188,67 @@ class Lexer {
 
         else 
             return this.tokens.push(new Token('IDENTIFIER', value, start, end));
-    };
 
-    _process_string() {
-    // this.cursor points at the opening quote. Find the ending quote.
-    let start = this.position();
-    let end_index = this.source.indexOf(this.char, this.cursor + 1);
-
-    try {
-    if (end_index === -1) {
-        throw new Error(`Unterminated string at ${this.cursor}`);
-    } 
-        } catch(err) {
-
-        // trigger end condition for main while loop
-        this.cursor = this.sourceLength;
-        return console.log(err.message);
     }
+
+
+
+    _process_string(char) {
+
+        let start = this.position();
+        while(this.look() != char && this.end()) {
+            this.forward();
+        }
+
+        try {
+
+            if(!this.end()) {
+                throw new Error(`Unterminated string at line ${this.line}`);
+            }
         
-        this.char = this.source.charAt(end_index);
-        let value = this.source.substring(this.cursor, end_index + 1);
-        this.cursor = end_index + 1;
-        let end = this.position();
-        
-        return this.tokens.push(new Token('STRING', value, start, end)); 
+            // get the closing quote
+            this.forward();
+            this.forward();
+
+            let value = this.source.substring(start.cursor, this.cursor);
+            let end = this.position();
+
+            return this.tokens.push(new Token('STRING', value, start, end));
+
+        } catch(err) {
+            this.cursor = this.sourceLength;
+            return console.error(err.message);
+        }
+    }
+
+
+
+    _process_token(type, value) {
+         let start = this.position();
+         this.cursor += 2;
+         this.column += 2;
+         let end = this.position();
+         return this.tokens.push(new Token(type, value, start, end));
     }
 
 
     _process_space() {
        
-        while (this.cursor < this.sourceLength) {
-            this.char = this.source.charAt(this.cursor);
+        while (this.end()) {
 
-            // /r is carriage return
-            if (this._iswhitespace()) {
-            this.cursor++;
-            this.column++;
+            if (this._iswhitespace(this.current())) {
+                this.forward();    
 
-            } else if (this._isnewline()) {
-                this.cursor++;
-                this.line++;
+            } else if (this._isnewline(this.current())) {
+                this.forward();
                 this.column = 1;
+                this.line++;
             } else {
                 break;
             }
+
         }
-};
+    };
 
 };
 
@@ -224,5 +258,6 @@ let tinyScript = new Lexer(input);
 
 tinyScript.scanInput();
 console.log(tinyScript);
+console.log(JSON.stringify(tinyScript, null, 2));
 
 module.exports = { Lexer };

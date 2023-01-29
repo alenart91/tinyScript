@@ -21,7 +21,11 @@ const optable = {
     '}':  'R_BRACE',
     '[':  'L_BRACKET',
     ']':  'R_BRACKET',
-    '=':  'EQUALS'
+    '=':  'EQUALS',
+    '==': 'COMPARE',
+    '!=': 'NOT_EQUAL',
+    '>=': 'GREATER_EQUAL',
+    '<=': 'LESS_EQUAL'
     };
 
 

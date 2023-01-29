@@ -47,11 +47,9 @@ class Parser {
     term() {
         
         // recursively goes into the higher precendence grammar rules until it returns a value
-       //  console.log('before factor');
         let left = this.factor();
-        // console.log('after factor');
 
-       while(this.match('+', '-')) {
+        while(this.match('+', '-')) {
         
         let operator = this.getPreviousToken().value;
         let right = this.factor();
@@ -269,3 +267,6 @@ console.log('parser tokens', JSON.stringify(ast, null, 3));
 //                | primary ;
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
+
+
+

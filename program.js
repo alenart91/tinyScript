@@ -10,15 +10,18 @@
 //     }
 // }`;
 
-let inputTwo = `routine name<> { }`;
+let inputTwo = `routine name<> { }`;   // 17
 
-let inputThree = `function myfn() {
-    let a = 'my string';
-    // this variable is a string
+let input = `function myfn() {
+let a = 'my string';
+let b = 60 + 100;
+(a == 'my string') ? true : false;
+// this variable is a str'ing
+return a + b;
 }`;
 
 
-let input = `-(1 + 2) * 3`;
+// let input = `-(1 + 2) * 3`;
 
 // let input = `5 + 3 + 8 * 1`;
 
