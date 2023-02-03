@@ -7,8 +7,9 @@ const keywords = {
     'let': 'LET',
     'const': 'CONST',
     'function': 'FUNCTION',
-    'true': 'BOOLEAN',
-    'false': 'BOOLEAN'
+    'true': 'TRUE',
+    'false': 'FALSE',
+    'print': 'PRINT'
 };
 
 module.exports = { keywords };

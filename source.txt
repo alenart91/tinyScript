@@ -1,0 +1,2 @@
+declare myName = 'alexander';
+print myName + 'is cool';

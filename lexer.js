@@ -1,7 +1,7 @@
 const { optable } = require('./optable.js');
 const { keywords } = require('./keywords.js');
-const { Token } = require('./token.js');
-const { input } = require('./program.js');
+const { Token } = require('./Token.js');
+// const { input } = require('./program.js');
 
 class Lexer {
 
@@ -84,7 +84,7 @@ class Lexer {
             }
      }
      
-     // this.tokens.push(new Token(toks.EOF, "", null, this.line));
+     // this.tokens.push(new Token('EOF', ""));
      return this.tokens;
     
 };
@@ -150,7 +150,7 @@ class Lexer {
         let value = this.source.substring(start.cursor, this.cursor);
         let end = this.position();
 
-        return this.tokens.push(new Token('NUMBER', value, start, end));
+        return this.tokens.push(new Token('NUMBER', Number(value), start, end));
     
     }
 
@@ -183,8 +183,9 @@ class Lexer {
         let end = this.position();
 
         // return keyword token if it exists
-        if(keywords.hasOwnProperty(value))  
-            return this.tokens.push(new Token('KEYWORD', keywords[value], start, end));
+        if(keywords.hasOwnProperty(value))  {
+            return this.tokens.push(new Token(value, keywords[value], start, end));
+        }
 
         else 
             return this.tokens.push(new Token('IDENTIFIER', value, start, end));
@@ -254,10 +255,10 @@ class Lexer {
 
 
 
-let tinyScript = new Lexer(input);
+// let tinyScript = new Lexer(input);
 
-tinyScript.scanInput();
-console.log(tinyScript);
-console.log(JSON.stringify(tinyScript, null, 2));
+// tinyScript.scanInput();
+// console.log(tinyScript);
+// console.log(JSON.stringify(tinyScript, null, 2));
 
 module.exports = { Lexer };

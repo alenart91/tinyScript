@@ -5,7 +5,7 @@
   "main": "lexer.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon node lexer.js"
+    "start": "nodemon node interpreter.js"
   },
   "keywords": [
     "lexer",

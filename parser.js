@@ -1,46 +1,127 @@
-const { Lexer } = require('./lexer.js');
+const { Lexer } = require('./Lexer.js');
 const { input } = require('./program.js');
 const { keywords } = require('./keywords.js');
+
+const Expr = require('./Expression.js');
+const Stmt = require('./Statement.js');
 
 
 class Parser {
 
     constructor(tokens) {
         this.tokens = tokens;
-        this.lookAhead = this.tokens[this.position + 1];
         this.position = 0;
+        this.statements = [];
     }
 
 
     parse() {
-        // check if there are any more tokens
-        while(this.position < this.tokens.length) {
-            
-            return {
-                type: 'Program',
-                body: this.statement()  // this will recursivley build the AST from here
-            }
+
+        while(!this.finished()) {
+            this.statements.push(this.declaration());
         }
+
+         return {
+                type: 'Program',
+                body: this.statements  // this.declaration()  // this will recursivley build the AST from here
+            }
+
     }
+
+
+
+    declaration() {
+
+        try {
+            if(this.match('declare')) return this.variableDecl();
+            return this.statement();
+        } catch(err) {
+            // this.synchronize();
+            return null;
+        }
+
+    }
+
+
+
+    variableDecl() {
+        let name = this.consume('IDENTIFIER', 'Expected variable name');
+
+        let initializer = null;
+        if(this.match('=')) {
+            initializer = this.expression();
+        }
+
+        this.consume(';', 'Expected ; after variable declaration');
+        return new Stmt.Declare(name.value, initializer);
+    }
+
 
     statement() {
-        // let currentToken = this.tokens[this.position];
-        // if(currentToken.type === 'KEYWORD') return this.variableDeclaration();
+       
+        try {
+            if(this.match('print')) return this.printStatement();
 
-        // if(this.match(keywords['let']) || this.match(keywords['const'])) return this.variableDeclaration();
-        // if(this.checkTokenType(keywords['let']) || this.checkTokenType(keywords['const'])) return this.variableDeclaration();
-        // if(this.match(keywords['function'])) return this.functionDeclaration();
+            return this.expressionStatement();
 
-        // other statements like FOR, WHILE, RETURN, LEFT BRACE, PRINT ECT.
-        return this.term();
+        } catch(err) {
+            console.error(err.message);
+        }
+
+    }
+
+
+    printStatement() {
+        let value = this.expression();
+        this.consume(';', 'Expect ; after expression');
+        return new Stmt.Print(value);
+    
+    }
+
+
+
+    expressionStatement() {
+        let expression = this.expression();
+        this.consume(';', 'Expect ; after expression');
+        return new Stmt.Expression(expression);
+    }
+
+
+
+    expression() {
+        return this.equality();
+    }
+
+
+
+
+    equality() {
+        let left = this.comparison();
+
+        while(this.match('!=', '==')) {
+            let operator = this.getPreviousToken().value;
+            let right = this.comparison();
+            left = new Expr.Equality(left, operator, right);
+        }
+
+        return left;
 
     }
 
 
 
-    // expression() {
-    //     return this.term();
-    // }
+    comparison() {
+
+        let left = this.term();
+
+        while(this.match('>', '<', '>=', '<=')) {
+            let operator = this.getPreviousToken().value;
+            let right = this.term();
+            left = new Expr.Comparison(left, operator, right);
+        }
+
+        return left;
+    }
 
 
 
@@ -53,7 +134,7 @@ class Parser {
         
         let operator = this.getPreviousToken().value;
         let right = this.factor();
-        left = new BinaryOperation(left, operator, right);
+        left = new Expr.BinaryOperation(left, operator, right);
        }
 
         return left;
@@ -70,9 +151,7 @@ class Parser {
             let operator = this.getPreviousToken().value;
             let right = this.unary();
             
-            // console.log('before left', left);
-            left = new BinaryOperation(left, operator, right);
-            // console.log(left);
+            left = new Expr.BinaryOperation(left, operator, right);
         }
 
         return left;
@@ -85,23 +164,48 @@ class Parser {
         if(this.match('-', '!')) {
             let operator = this.getPreviousToken().value;
             let right = this.unary();
-            return new Unary(operator, right);
+            return new Expr.Unary(operator, right);
         }
 
         return this.primary();
     }
 
 
-     primary() {
+     
+    primary() {
+
+        if(this.match('true')) {
+            let token = this.getPreviousToken();
+            return new Expr.Literal(token.value, token.start, token.end);
+        }
+
+        if(this.match('false')) {
+            let token = this.getPreviousToken();
+            return new Expr.Literal(token.value, token.start, token.end);
+        }
+
         if(this.match('NUMBER', 'STRING')) {
-            return this.getPreviousToken().value;
+            
+            let token = this.getPreviousToken();
+            return new Expr.Literal(token.value, token.start, token.end);
+        }
+
+        if(this.match('IDENTIFIER')) {
+            return new Expr.Variable(this.getPreviousToken().value);
         }
 
         if(this.match('(')) {
-            let left = this.statement();
+            
+            let start = this.getPreviousToken().start;
+            let left = this.expression();
+            
             this.consume(')', 'Expected ) after expression');
-            return new Expression(left);
+            let end = this.getPreviousToken().end;
+
+            return new Expr.Grouping(left, start, end);
         }
+
+        // throw error();
     }
 
 
@@ -122,11 +226,9 @@ class Parser {
             return false;
         }
 
-        // console.log('get current token', this.getCurrentToken().type);
-        // console.log('get current token value', this.getCurrentToken().value);
 
         if(this.getCurrentToken().type == tokenType) {
-            // console.log('token type true', tokenType);
+            console.log('token type true', tokenType);
             return true;
         }
 
@@ -142,7 +244,6 @@ class Parser {
     // It’s sort of like advance(), but doesn’t consume the character. This is called lookahead. 
     // Since it only looks at the current unconsumed character, we have one character of lookahead.
     
-    // peek()
     getCurrentToken() {
         return this.tokens[this.position];
     }
@@ -159,11 +260,10 @@ class Parser {
 
     
     // After parsing the expression, the parser looks for the closing ) by calling consume().
-    consume(type) {
-        console.log('in consume', type);
+    consume(type, message) {
         if (this.checkTokenType(type)) return this.advance();
 
-       return this.parseError(this.peek(), message);
+        this.parseError(this.getCurrentToken(), message);
     }
    
 
@@ -174,15 +274,10 @@ class Parser {
 
     match(...types) {
 
-        // console.log('types', types, ...types);
-
         for (let type of types) {
-
-            // console.log('type checking:', type);
 
             if (this.checkTokenType(type)) {
 
-                console.log('check token type match', type);
                 this.advance();
                 return true;
             }
@@ -200,13 +295,15 @@ class Parser {
             this.position++;
         }
 
+
         return this.getPreviousToken();
 
     }
 
 
     parseError(token, message) {
-        return `${message} instead of ${token}`;
+        console.log('parser error', token, message);
+        throw new Error( `${message} instead of ${token}`);
     }
 
 
@@ -214,59 +311,16 @@ class Parser {
 
 
 
-class Expression {
-    constructor(expression) {
-        this.expression = expression;
-    }
-};
+// let tinyScript = new Lexer(input);
+// let programTokens = tinyScript.scanInput();
 
 
-
-class BinaryOperation {
-    constructor(leftVal, operator, rightVal) {
-        this.leftVal = leftVal;
-        this.operator = operator;
-        this.rightVal = rightVal;
-    }
-
-};
-
-
-
-class Unary {
-    constructor(operator, literal) {
-        this.operator = operator;
-        this.literal = literal;
-    }
-};
-
-
-
-
-
-let tinyScript = new Lexer(input);
-let programTokens = tinyScript.scanInput();
-
-
-let tinyParser = new Parser(programTokens);
+// let tinyParser = new Parser(programTokens);
+// console.log(tinyParser.tokens);
 // console.log(tinyParser.parse());
-let ast = tinyParser.parse();
-console.log('parser tokens', JSON.stringify(ast, null, 3));
+// let ast = tinyParser.parse();
+// console.log('parser tokens', JSON.stringify(ast, null, 3));
 
 
 
-// loops through and looks for terminals like + or / and if it doesn't find them it moves down to items with higher
-// precendence
-
-// expression     → equality ;
-// equality       → comparison ( ( "!=" | "==" ) comparison )* ;
-// comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-// term           → factor ( ( "-" | "+" ) factor )* ;
-// factor         → unary ( ( "/" | "*" ) unary )* ;
-// unary          → ( "!" | "-" ) unary
-//                | primary ;
-// primary        → NUMBER | STRING | "true" | "false" | "nil"
-//                | "(" expression ")" ;
-
-
-
+module.exports = { Parser };
