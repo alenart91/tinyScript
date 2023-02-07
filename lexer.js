@@ -1,7 +1,8 @@
 const { optable } = require('./optable.js');
 const { keywords } = require('./keywords.js');
 const { Token } = require('./Token.js');
-// const { input } = require('./program.js');
+const { input } = require('./p.js');
+const { readFileSync } = require('fs');
 
 class Lexer {
 
@@ -19,51 +20,38 @@ class Lexer {
     scanInput() {
     
         while(this.end()) {  
-            
-            this._process_space();
-
+            let symbol;
             let op = optable[this.char];
-            op !== undefined ? op = this.char : op = undefined;
+            
+            op !== undefined ? symbol = this.char : symbol = undefined;
 
             switch(this.char) {
-                case op:
-                   
-                    if (op === '/' && this.look() === '/') {
-                        this._process_comment();
-                        break;
-                    }
-
-                    if (op === '=' && this.look() === '=') {
-
-                        this._process_token('COMPARE', '==');
-                        break;
-                    }
-
-                    if(op === '<' && this.look() === '=') {
-
-                        this._process_token('LESS_EQUAL', '<=');
-                        break;
-                    }
-
-                    if(op === '>' && this.look() === '=') {
-
-                        this._process_token('GREATER_EQUAL', '>=');
-                        break;
-                    }
-
-                    if(op === '!' && this.look() === '=') {
-
-                        this._process_token('NOT_EQUAL', '!=');
-                        break;
-                    }
-                        
-                    
-                    let start = this.position();
+                case ' ':
+                    // loop throught whitespace here?
                     this.forward();
-                    let end = this.position();
-                    this.tokens.push(new Token(op, this.char, start, end));
+                    break;
+
+                case '\t':
+                    this.forward();
+                    break;
+
+                case '\n': 
+                    this.forward();
+                    this.line++;
+                    this.column = 1; 
+                    break;
+
+                case '\r': 
+                    this.forward();
+                    this.column = 1; 
                     break;
                 
+                case '/': this._process_token(this.match('/') ? '//' : '/'); break;
+                case '=': this._process_token(this.match('=') ? '==' : '='); break;
+                case '<': this._process_token(this.match('=') ? '<=' : '<'); break;
+                case '>': this._process_token(this.match('=') ? '>=' : '>'); break;
+                case '!': this._process_token(this.match('=') ? '!=' : '!'); break;
+                case symbol: this._process_token(symbol); break;
 
                 default:
                     
@@ -89,8 +77,15 @@ class Lexer {
     
 };
 
-
     // Helper functions
+    match(token) {
+        if(this.look() == token) {
+            this.forward();
+            return true;
+        }
+
+        return false;
+    } 
 
     position() {
         return { cursor: this.cursor, line: this.line, column: this.column };
@@ -105,21 +100,16 @@ class Lexer {
     }
 
     current() {
-        this.char = this.source.charAt(this.cursor); 
         return this.source.charAt(this.cursor);
     }
 
     forward() {
-        this.cursor += 1;
-        this.column += 1;
-    }
+        // increments the cursor and returns the previous token
+        this.cursor++;
+        this.column++;
 
-
-
-    // Character test functions
-
-    _iswhitespace(s) {
-        return s == ' ' || s == '\t';
+        this.char = this.source.charAt(this.cursor);
+        return this.source.charAt(this.cursor);
     }
 
   
@@ -142,8 +132,8 @@ class Lexer {
     _process_number() {
 
         let start = this.position();
+
         while(this._isdigit(this.current()) && this.end()) {
-    
             this.forward();
         }
         
@@ -156,10 +146,9 @@ class Lexer {
 
 
     _process_comment() {
-        
         let start = this.position();
+        
         while(!this._isnewline(this.current()) && this.end()) {
-    
             this.forward();
         }
         
@@ -172,19 +161,17 @@ class Lexer {
 
 
     _process_identifier() {
-       
         let start = this.position();
+
         while(this._isalpha(this.current()) && this.end()) {
-    
             this.forward();
         }
         
         let value = this.source.substring(start.cursor, this.cursor);
         let end = this.position();
 
-        // return keyword token if it exists
         if(keywords.hasOwnProperty(value))  {
-            return this.tokens.push(new Token(value, keywords[value], start, end));
+            return this.tokens.push(new Token(keywords[value], value, start, end));
         }
 
         else 
@@ -194,10 +181,10 @@ class Lexer {
 
 
 
-    _process_string(char) {
-
+    _process_string(stringQuote) {
         let start = this.position();
-        while(this.look() != char && this.end()) {
+
+        while(this.look() != stringQuote && this.end()) {
             this.forward();
         }
 
@@ -207,13 +194,12 @@ class Lexer {
                 throw new Error(`Unterminated string at line ${this.line}`);
             }
         
-            // get the closing quote
             this.forward();
             this.forward();
 
             let value = this.source.substring(start.cursor, this.cursor);
             let end = this.position();
-
+            
             return this.tokens.push(new Token('STRING', value, start, end));
 
         } catch(err) {
@@ -224,41 +210,25 @@ class Lexer {
 
 
 
-    _process_token(type, value) {
+    _process_token(value) {
+         let type = optable[value];
+         if(type == 'COMMENT') return this._process_comment();
+
          let start = this.position();
-         this.cursor += 2;
-         this.column += 2;
+         this.forward();
          let end = this.position();
+
          return this.tokens.push(new Token(type, value, start, end));
     }
 
-
-    _process_space() {
-       
-        while (this.end()) {
-
-            if (this._iswhitespace(this.current())) {
-                this.forward();    
-
-            } else if (this._isnewline(this.current())) {
-                this.forward();
-                this.column = 1;
-                this.line++;
-            } else {
-                break;
-            }
-
-        }
-    };
-
 };
 
+const program = readFileSync('./source.txt', 'utf8');
 
+let tinyScript = new Lexer(input);
 
-// let tinyScript = new Lexer(input);
-
-// tinyScript.scanInput();
-// console.log(tinyScript);
-// console.log(JSON.stringify(tinyScript, null, 2));
+tinyScript.scanInput();
+console.log(tinyScript);
+console.log(JSON.stringify(tinyScript, null, 2));
 
 module.exports = { Lexer };
