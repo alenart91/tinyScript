@@ -34,4 +34,42 @@ class Declare {
     }
 }
 
-module.exports = { Expression, Print, Declare };
+
+
+class Block {
+    constructor(statements) {
+        this.statements = statements;
+    }
+
+    accept(visitor) {
+        return visitor.visitBlockStmt(this);
+    }
+}
+
+
+class If {
+    constructor(condition, thenBranch, elseBranch) {
+        this.condition = condition;
+        this.thenBranch = thenBranch;
+        this.elseBranch = elseBranch;
+
+    }
+
+    accept(visitor) {
+        return visitor.visitIfStmt(this);
+    }
+}
+
+
+class While {
+    constructor(condition, body) {
+        this.condition = condition;
+        this.body = body;
+    }
+
+    accept(visitor) {
+        return visitor.visitWhileStmt(this);
+    }
+}
+
+module.exports = { Expression, Print, Declare, Block, If, While };

@@ -1,3 +1,16 @@
+class Assignment {
+    constructor(name, value) {
+        this.name = name;
+        this.value = value;
+        this.type = 'Assignment';
+    }
+
+    accept(visitor) {
+        return visitor.visitAssignmentExpr(this);
+    }
+}
+
+
 
 class Equality {
     constructor(leftVal, operator, rightVal) {
@@ -10,14 +23,18 @@ class Equality {
 
 
 
-class Comparison {
-    constructor(leftVal, operator, rightVal) {
-        this.leftVal = leftVal;
-        this.operator = operator;
-        this.rightVal = rightVal;
-        this.type = 'Comparison';
-    }
-}
+// class Comparison {
+//     constructor(leftVal, operator, rightVal) {
+//         this.leftVal = leftVal;
+//         this.operator = operator;
+//         this.rightVal = rightVal;
+//         this.type = 'Comparison';
+//     }
+
+//     accept(visitor) {
+//         visitor.
+//     }
+// }
 
 
 
@@ -67,7 +84,21 @@ class Variable {
     }
 
     accept(visitor) {
+        // console.log('in var expression', this);
         return visitor.visitVariableExpr(this);
+    }
+}
+
+
+class Logic {
+    constructor(left, operator, right) {
+        this.left = left;
+        this.operator = operator;
+        this.right = right;
+    }
+
+    accept(visitor) {
+        return visitor.visitLogicalExpr(this);
     }
 }
 
@@ -88,4 +119,4 @@ class Literal {
 
 
 
-module.exports = { Equality, Comparison, Unary, Grouping, BinaryOperation, Variable, Literal };
+module.exports = { Assignment, Equality, Unary, Grouping, BinaryOperation, Variable, Logic, Literal };

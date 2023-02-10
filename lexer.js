@@ -27,10 +27,9 @@ class Lexer {
 
             switch(this.char) {
                 case ' ':
-                    // loop throught whitespace here?
-                    this.forward();
+                    while(this.current() == ' ' && this.end()) this.forward();
                     break;
-
+    
                 case '\t':
                     this.forward();
                     break;
@@ -46,7 +45,7 @@ class Lexer {
                     this.column = 1; 
                     break;
                 
-                case '/': this._process_token(this.match('/') ? '//' : '/'); break;
+                case '/': this._process_token(this.look() == '/' ? '//' : '/'); break;
                 case '=': this._process_token(this.match('=') ? '==' : '='); break;
                 case '<': this._process_token(this.match('=') ? '<=' : '<'); break;
                 case '>': this._process_token(this.match('=') ? '>=' : '>'); break;
@@ -64,6 +63,7 @@ class Lexer {
 
                       } catch(err) {
                             // trigger end condition for main while loop
+                            console.log('in lexer error');
                             this.cursor = this.sourceLength;
                             return console.error(err.message);
                       }
@@ -133,49 +133,33 @@ class Lexer {
 
         let start = this.position();
 
-        while(this._isdigit(this.current()) && this.end()) {
-            this.forward();
-        }
+        while(this._isdigit(this.current()) && this.end()) this.forward();
         
         let value = this.source.substring(start.cursor, this.cursor);
         let end = this.position();
 
         return this.tokens.push(new Token('NUMBER', Number(value), start, end));
-    
     }
 
 
     _process_comment() {
-        let start = this.position();
-        
-        while(!this._isnewline(this.current()) && this.end()) {
-            this.forward();
-        }
-        
-        let value = this.source.substring(start.cursor, this.cursor);
-        let end = this.position();
 
-        return this.tokens.push(new Token('COMMENT', value, start, end));
-
+        while(!this._isnewline(this.current()) && this.end()) this.forward();
+        return;
     }
 
 
     _process_identifier() {
         let start = this.position();
 
-        while(this._isalpha(this.current()) && this.end()) {
-            this.forward();
-        }
+        while(this._isalpha(this.current()) && this.end()) this.forward();
         
         let value = this.source.substring(start.cursor, this.cursor);
         let end = this.position();
-
-        if(keywords.hasOwnProperty(value))  {
-            return this.tokens.push(new Token(keywords[value], value, start, end));
-        }
-
-        else 
-            return this.tokens.push(new Token('IDENTIFIER', value, start, end));
+        
+        let type;
+        keywords.hasOwnProperty(value) ? type = keywords[value] : type = 'IDENTIFIER';
+        return this.tokens.push(new Token(type, value, start, end));
 
     }
 
@@ -184,28 +168,17 @@ class Lexer {
     _process_string(stringQuote) {
         let start = this.position();
 
-        while(this.look() != stringQuote && this.end()) {
-            this.forward();
-        }
+        while(this.look() != stringQuote && this.end()) this.forward();
 
-        try {
-
-            if(!this.end()) {
-                throw new Error(`Unterminated string at line ${this.line}`);
-            }
+        if(!this.end()) throw new Error(`Unterminated string at line ${this.line}`);
         
-            this.forward();
-            this.forward();
+        this.forward();
+        this.forward();
 
-            let value = this.source.substring(start.cursor, this.cursor);
-            let end = this.position();
+        let value = this.source.substring(start.cursor, this.cursor);
+        let end = this.position();
             
-            return this.tokens.push(new Token('STRING', value, start, end));
-
-        } catch(err) {
-            this.cursor = this.sourceLength;
-            return console.error(err.message);
-        }
+        return this.tokens.push(new Token('STRING', value, start, end));
     }
 
 
@@ -227,8 +200,8 @@ const program = readFileSync('./source.txt', 'utf8');
 
 let tinyScript = new Lexer(input);
 
-tinyScript.scanInput();
-console.log(tinyScript);
-console.log(JSON.stringify(tinyScript, null, 2));
+// tinyScript.scanInput();
+// console.log(tinyScript);
+// console.log(JSON.stringify(tinyScript, null, 2));
 
-module.exports = { Lexer };
+module.exports = { Lexer }; 
