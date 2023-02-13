@@ -19,6 +19,10 @@ class Equality {
         this.rightVal = rightVal;
         this.type = 'Equality';
     }
+
+    accept(visitor) {
+        return visitor.visitBinaryExpr(this);
+    }
 }
 
 

@@ -6,11 +6,11 @@ const optable = {
     '.':  'PERIOD',
     ':':  'COLON',
     '%':  'PERCENT',
-    '|':  'PIPE',
+    '|':  'OR',
     '!':  'EXCLAMATION',
     '?':  'QUESTION',
     '#':  'POUND',
-    '&':  'AMPERSAND',
+    '&':  'AND',
     ';':  'SEMI',
     ',':  'COMMA',
     '(':  'L_PAREN',
@@ -25,7 +25,8 @@ const optable = {
     '==': 'COMPARE',
     '!=': 'NOT_EQUAL',
     '>=': 'GREATER_EQUAL',
-    '<=': 'LESS_EQUAL'
+    '<=': 'LESS_EQUAL',
+    '//': 'COMMENT'
     };
 
 

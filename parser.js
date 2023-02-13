@@ -12,6 +12,7 @@ class Parser {
         this.tokens = tokens;
         this.position = 0;
         this.statements = [];
+        this.loopControl = 0;
     }
 
 
@@ -40,8 +41,7 @@ class Parser {
         } catch(err) {
             console.error(err.message);
             this.sync();
-            // console.error(err.message);
-            // this.position++;
+            
             return null;
         }
 
@@ -95,6 +95,7 @@ class Parser {
             if(this.match('IF')) return this.ifStatement();
             if(this.match('WHILE')) return this.whileStatement();
             if(this.match('LOOP')) return this.loopStatement();
+            if(this.match('CONTINUE')) return this.continueStatement();
             if(this.match('STOP')) return this.stopStatement();
             if(this.match('PRINT')) return this.printStatement();
             if(this.match('L_BRACE')) return new Stmt.Block(this.block());
@@ -128,14 +129,20 @@ class Parser {
         this.consume('L_PAREN', 'Expected ( after while keyword');
         let condition = this.expression();
         this.consume('R_PAREN', 'Expect ) after condition');
+
+        this.loopControl = this.loopControl += 1;
+        // defer here?
+
         let body = this.statement();
+
+        this.loopControl = this.loopControl -= 1;
 
         return new Stmt.While(condition, body);
     }
 
 
     loopStatement() {
-        this.consume('L_PAREN', 'Expected ( after for keyword');
+        this.consume('L_PAREN', 'Expected ( after loop keyword');
 
         let initializer;
 
@@ -162,26 +169,36 @@ class Parser {
 
         this.consume('R_PAREN', 'Expect ) after for clauses');
 
+        this.loopControl = this.loopControl += 1;
         let body = this.statement();
 
-        if(body == 'STOP');
 
-        if(increment != null) {
-            body = new Stmt.Block([body, new Stmt.Expression(increment)]);
-        }
+        this.loopControl = this.loopControl -= 1;
 
-        if(condition == null) condition = Expr.Literal(true);
-        body = new Stmt.While(condition, body);
-
-        if(initializer != null) body = new Stmt.Block([initializer, body]);
-
-        return body;
+        return new Stmt.Loop(initializer, condition, increment, body);
 
     }
+    
 
+    // jump out of any loop
+    // if it's encountered in an if statement it will break out of the enclosing loop
+    // if it's not encountered in a loop it's a syntax error
 
     stopStatement() {
+        if(this.loopControl == 0)   throw new Error('Stop statement can only be used inside of a loop');
+
+        this.consume('SEMI', 'Expect ; after stop statement');
+        return new Stmt.Stop();
         
+    }
+
+    // stop the current loop iteration
+    // start the next iteration
+    continueStatement() {
+        if(this.loopControl == 0)   throw new Error('Continue statement can only be used inside of a loop');
+
+        this.consume('SEMI', 'Expect ; after continue statement');
+        return new Stmt.Continue();
     }
 
 
@@ -194,13 +211,9 @@ class Parser {
 
 
     block() {
-        // console.log('in block');
         let statements = [];
 
-        // console.log('token type', this.getCurrentToken().type);
-
         while(this.getCurrentToken().type != 'R_BRACE' && !this.finished()) {
-            // console.log('triggered block statement');
             statements.push(this.declaration());
         }
 

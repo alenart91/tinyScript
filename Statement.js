@@ -72,4 +72,40 @@ class While {
     }
 }
 
-module.exports = { Expression, Print, Declare, Block, If, While };
+class Loop {
+    constructor(initializer, condition, increment, body) {
+        this.initializer = initializer;
+        this.condition = condition;
+        this.increment = increment;
+        this.body = body;
+    }
+
+    accept(visitor) {
+        return visitor.visitLoopStmt(this);
+    }
+}
+
+
+class Stop {
+    constructor() {
+        this.type = 'STOP';
+    }
+
+    accept(visitor) {
+        return visitor.visitStopStmt(this);
+    }
+}
+
+
+class Continue {
+    constructor() {
+        this.type = 'CONTINUE';
+    }
+
+    accept(visitor) {
+        return visitor.visitContinueStmt(this);
+
+    }
+}
+
+module.exports = { Expression, Print, Declare, Block, If, While, Loop, Stop, Continue };

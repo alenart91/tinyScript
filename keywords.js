@@ -5,6 +5,7 @@ const keywords = {
     'loop': 'LOOP',
     'while': 'WHILE',
     'stop': 'STOP',
+    'continue': 'CONTINUE',
     'declare': 'DECLARE',
     'let': 'LET',
     'const': 'CONST',
