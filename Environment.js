@@ -5,7 +5,18 @@ class Environment {
     }
 
     define(name, value) {
-        this.values.set(name, value);
+        this.values.set(name, value); 
+    }
+
+    defineGlobal(name, value) {
+
+        if(this.enclave == null) {
+            this.values.set(name, value);
+        }
+
+        if(this.enclave !== null) {
+            return this.enclave.defineGlobal(name, value);
+        }
     }
 
 

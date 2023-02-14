@@ -17,7 +17,7 @@ class Parser {
 
 
     parse() {
-
+        // console.log(this.tokens);
         while(!this.finished()) {
             this.statements.push(this.declaration());
         }
@@ -36,6 +36,7 @@ class Parser {
 
         try {
             if(this.match('DECLARE')) return this.variableDecl();
+            if(this.match('GLOBAL')) return this.variableDecl();
             return this.statement();
 
         } catch(err) {
@@ -76,6 +77,8 @@ class Parser {
 
 
     variableDecl() {
+
+        let varType = this.getPreviousToken().type;
         let name = this.consume('IDENTIFIER', 'Expected variable name');
         let initializer = null;
 
@@ -84,7 +87,12 @@ class Parser {
         }
 
         this.consume('SEMI', 'Expected ; after variable declaration');
-        return new Stmt.Declare(name.value, initializer);
+
+        if(varType == 'DECLARE') {
+            return new Stmt.Declare(name.value, initializer);
+        } else {
+            return new Stmt.Global(name.value, initializer);
+        }
     }
 
 

@@ -34,6 +34,17 @@ class Declare {
     }
 }
 
+class Global {
+    constructor(name, initializer) {
+        this.name = name;
+        this.initializer = initializer;
+    }
+
+    accept(visitor) {
+        return visitor.visitGlobalStmt(this);
+    }
+}
+
 
 
 class Block {
@@ -108,4 +119,4 @@ class Continue {
     }
 }
 
-module.exports = { Expression, Print, Declare, Block, If, While, Loop, Stop, Continue };
+module.exports = { Expression, Print, Declare, Global, Block, If, While, Loop, Stop, Continue };

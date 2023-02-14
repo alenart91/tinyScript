@@ -7,6 +7,7 @@ const keywords = {
     'stop': 'STOP',
     'continue': 'CONTINUE',
     'declare': 'DECLARE',
+    'global': 'GLOBAL',
     'let': 'LET',
     'const': 'CONST',
     'function': 'FUNCTION',

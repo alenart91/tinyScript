@@ -26,6 +26,7 @@ class Interpreter {
         } catch(err) {
             console.error(err.message);
         } finally {
+            // console.log(this.environment);
             return 'Program finished';
         }
     
@@ -34,13 +35,38 @@ class Interpreter {
     
 
     visitDeclareStmt(stmt) {
+        // console.log('statement declare', stmt);
         let val = null;
 
         if(stmt.initializer != null) {
             val = this.evaluate(stmt.initializer);
         }
         
+        // val is literal (Alexander)
+        // name is variable declaration
+
+        // sets and updates variables. 
+        // Doesn't need env scope because if it exists it will update it else it will create it
+
         this.environment.define(stmt.name, val);
+
+        return null;
+    }
+
+
+    visitGlobalStmt(stmt) {
+
+        // get to top level of environment and declare variable there
+        // console.log('global stmt', stmt);
+        // console.log('env', this.environment);
+
+        let val = null;
+
+        if(stmt.initializer != null) {
+            val = this.evaluate(stmt.initializer);
+        }
+
+        this.environment.defineGlobal(stmt.name, val);
 
         return null;
     }
@@ -66,7 +92,7 @@ class Interpreter {
             this.environment = environment;
 
             for(let i = 0; i < statements.length; i++) {
-                console.log('beginning of block statement loop');
+                // console.log('beginning of block statement loop');
 
                 this.evaluate(statements[i]);
             }
@@ -256,6 +282,7 @@ class Interpreter {
     // add implicit variable declaration like JavaScript
 
     visitAssignmentExpr(expr) {
+        // console.log('var assignment', expr);
         let value = this.evaluate(expr.value);
         this.environment.assign(expr.name, value);
         return value;
@@ -264,7 +291,7 @@ class Interpreter {
 
 
     visitVariableExpr(expr) {
-       
+        // console.log('var expr', expr);
         return this.environment.retrieve(expr.name);
     }
 
