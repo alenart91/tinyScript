@@ -41,6 +41,20 @@ class Equality {
 // }
 
 
+class Call {
+    constructor(callee, paren, args) {
+        this.callee = callee;
+        this.paren = paren;
+        this.args = args;
+        this.type = 'CALL';
+    }
+
+    accept(visitor) {
+        return visitor.visitCallExpr(this);
+    }
+}
+
+
 
 class Unary {
     constructor(operator, literal) {
@@ -123,4 +137,4 @@ class Literal {
 
 
 
-module.exports = { Assignment, Equality, Unary, Grouping, BinaryOperation, Variable, Logic, Literal };
+module.exports = { Assignment, Equality, Call, Unary, Grouping, BinaryOperation, Variable, Logic, Literal };

@@ -58,6 +58,20 @@ class Block {
 }
 
 
+class Function {
+    constructor(name, params, body) {
+        this.name = name;
+        this.params = params;
+        this.body = body;
+        this.type = 'FUNCTION';
+    }
+
+    accept(visitor) {
+        return visitor.visitFunctionStmt(this);
+    }
+}
+
+
 class If {
     constructor(condition, thenBranch, elseBranch) {
         this.condition = condition;
@@ -119,4 +133,4 @@ class Continue {
     }
 }
 
-module.exports = { Expression, Print, Declare, Global, Block, If, While, Loop, Stop, Continue };
+module.exports = { Expression, Print, Declare, Global, Block, Function, If, While, Loop, Stop, Continue };

@@ -10,7 +10,7 @@ const keywords = {
     'global': 'GLOBAL',
     'let': 'LET',
     'const': 'CONST',
-    'function': 'FUNCTION',
+    'fn': 'FUNCTION',
     'true': 'TRUE',
     'false': 'FALSE',
     'print': 'PRINT'

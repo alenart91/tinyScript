@@ -2,6 +2,8 @@ const { Lexer } = require('./lexer.js');
 const { Parser } = require('./Parser.js');
 const { keywords } = require('./keywords.js');
 const { Environment } = require('./Environment.js');
+const { Callable } = require('./Callable.js');
+const { Fn } = require('./Function.js');
 
 const { readFileSync } = require('fs');
 
@@ -72,6 +74,17 @@ class Interpreter {
     }
 
 
+    visitFunctionStmt(stmt) {
+        console.log('in interpreter function', stmt);
+        let func = new Fn(stmt);
+
+        // stores the identifier and function body
+        this.environment.define(stmt.name, func);
+
+        return null;
+    }
+
+
     visitBlockStmt(stmt) {
         
         this.executeBlock(stmt.statements, new Environment(this.environment));
@@ -135,7 +148,7 @@ class Interpreter {
             this.evaluate(stmt.body);
 
             } catch(statement) {
-                
+                // rethrow for errors that occur in loops
                 if(statement == 'CONTINUE') continue;
                 if(statement == 'STOP') break;
             }
@@ -159,7 +172,7 @@ class Interpreter {
             this.evaluate(stmt.body);
 
             } catch(statement) {
-                
+                // rethrow for errors that occur in loops
                 if(statement == 'CONTINUE') continue;
                 if(statement == 'STOP') break;
             }
@@ -256,6 +269,31 @@ class Interpreter {
         }
 
         return null;
+    }
+
+
+    visitCallExpr(expr) {
+        console.log('in call expression', expr);
+
+        let callee = this.evaluate(expr.callee);
+        console.log('callee', callee);
+
+        let funcArguments = [];
+        for(let i = 0; i < expr.args.length; i++) {
+            funcArguments.push(this.evaluate(expr.args[i]));
+        }
+  
+        if(!(callee instanceof Fn)) {
+            console.log('in instance of callable');
+            throw new Error('Can only call functions');
+        }
+
+        // check arity
+
+        console.log('func args', funcArguments);
+
+        let func = callee;
+        return func.call(this, funcArguments);
     }
 
 

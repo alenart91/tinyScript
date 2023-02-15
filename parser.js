@@ -37,6 +37,7 @@ class Parser {
         try {
             if(this.match('DECLARE')) return this.variableDecl();
             if(this.match('GLOBAL')) return this.variableDecl();
+            if(this.match('FUNCTION')) return this.fn();
             return this.statement();
 
         } catch(err) {
@@ -93,6 +94,36 @@ class Parser {
         } else {
             return new Stmt.Global(name.value, initializer);
         }
+    }
+
+
+
+    fn() {
+        console.log('in function');
+        let name = this.consume('IDENTIFIER', 'Expected function name');
+        this.consume('L_PAREN', 'Expected ( after function name');
+        let params = [];
+
+        if(!this.checkTokenType('R_PAREN')) {
+            do {
+                if(params.length > 100) {
+                    console.error(this.getCurrentToken(), `Can't have more than 100 arguments in a function`);
+                }
+
+                console.log('in do', this.getCurrentToken());
+                params.push(this.consume('IDENTIFIER', 'Expected parameter name'));
+
+                
+            } while(this.match('COMMA'))
+        }
+
+        this.consume('R_PAREN', 'Expect ) after function parameters');
+        
+        // parse function body
+        this.consume('L_BRACE', 'Expect { before function body');
+        let body = this.block();
+        console.log('function body', body);
+        return new Stmt.Function(name.value, params, body);
     }
 
 
@@ -379,7 +410,44 @@ class Parser {
             return new Expr.Unary(operator, right);
         }
 
-        return this.primary();
+        return this.call();
+    }
+
+
+    call() {
+        let expression = this.primary();
+
+        while(true) {
+
+            if(this.match('L_PAREN')) {
+                expression = this.finishCall(expression);
+                console.log('function call', expression);
+
+            } else {
+                break;
+            }
+        }
+
+        // console.log('call expression', expression);
+        return expression;
+    }
+
+
+    finishCall(callee) {
+        console.log('in finish call', callee);
+        let args = [];
+        if(!this.checkTokenType('R_PAREN')) {
+            do {
+                if(args.length > 100) {
+                    console.error(this.getCurrentToken(), `Can't have more than 100 arguments in a function`);
+                }
+                args.push(this.expression());
+            } while(this.match('COMMA'));
+        }
+
+        let paren = this.consume('R_PAREN', 'Expected ) after function arguments');
+        return new Expr.Call(callee, paren, args);
+
     }
 
 
