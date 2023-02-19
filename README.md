@@ -3,22 +3,24 @@ used to run the code. This means memory is also handled by JS. TinyScript is pre
 is meant to serve as more of a learning exercise on how high level language are built. A lot of the implementation was heavily inspired by Bob Nystrom and his "Crafting Interpreters" book. TinyScript uses an LL(1) Parser with a Tree-Walk
 Interpreter. The interpreter implements the "visitor" pattern as it interprets each node in the AST.
 
-Scope:
+## Scope:
 
 TinyScript uses lexical scoping. Variables and functions share the same namespace, which means if they're in the same scope they cannot share the same name. There is no hoisting. It uses semantic analysis to assign variables before runtime.
 
 
-Native Functions:
+## Native Functions:
 
 
-Grammar:
+## Grammar:
 
 Backus-Naur Form (BNF) notation:
+These rules essentially represent the rules the parser uses to create the nodes
 
+```
 <program>       ::=  <declaration>*
 
-<declaration>   ::= <fnDecl> | <variableDecl> | <statement>
 
+<declaration>   ::= <fnDecl> | <variableDecl> | <statement>
 <fnDecl>        ::= "fn" <function>
 <variableDecl>  ::= "declare" IDENTIFIER ( "=" <expression> )? ";"
 <globalDecl>    ::= "global" IDENTIFIER ( "=" <expression> )? ";"
@@ -26,7 +28,6 @@ Backus-Naur Form (BNF) notation:
 
 <statement>      ::= <exprStmt> | <loopStmt> | <whileStmt> | <stopStmt> | <continueStmt> | <ifStmt> | <returnStmt> |
                      <block>
-
 <exprStmt>       ::= <expression> ";"
 <loopStmt>       ::= "loop" "(" ( <varDecl> | <exprStmt> | ";" ) <expression>? ";" <expression>? ")" <statement>
 <ifStmt>         ::= "if" "(" <expression> ")" <statement> ( "else" <statement> )?
@@ -36,7 +37,6 @@ Backus-Naur Form (BNF) notation:
 <stopStmt>       ::= "stop" ";"
 <continueStmt>   ::= "continue" ";"
 <block>          ::= "{" <declaration>* "}"
-
 
 
 <expression>     ::= <assignment>
@@ -52,11 +52,10 @@ Backus-Naur Form (BNF) notation:
 <primary>        ::= "true" | "false" | "null" | NUMBER | STRING | IDENTIFIER | "(" <expression> ")"
 
 
-
 <function>       ::= IDENTIFIER "(" <parameters>? ")" <block>
 <parameters>     ::= IDENTIFIER ( "," IDENTIFIER )*
 <arguments>      ::= <expression> ( "," <expression> )*
-
+```
 
 
 
@@ -65,17 +64,20 @@ Note: All of the examples are in the source.txt which is used to write the progr
 
 Example Program:
 
+```
 declare v = 5;
 declare x = 10;
 declare p = 10;
 
 if( v == x | v == p) return "something";
+```
 
 After running Lexical Analysis the Lexer outputs an array of tokens according to the optable and keywords. Comments
 and whitespace are removed.
 
 Tokens after running the Lexer:
 
+```
 tokens: [
     Token { type: 'IF', value: 'if', start: [Object], end: [Object] },
     Token {
@@ -265,12 +267,13 @@ tokens: [
     },
     Token { type: 'SEMI', value: ';', start: [Object], end: [Object] }
   ]
- 
+```
 
 
 
 The Parser returns:
 
+```
 {
   type: 'Program',
   body: [
@@ -280,7 +283,8 @@ The Parser returns:
     If { condition: [Logic], thenBranch: [Return], elseBranch: null }
   ]
 }
-
+```
 
 The Interpreter will then evaluate each of these nodes.
+
 
