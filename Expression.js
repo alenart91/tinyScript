@@ -27,18 +27,16 @@ class Equality {
 
 
 
-// class Comparison {
-//     constructor(leftVal, operator, rightVal) {
-//         this.leftVal = leftVal;
-//         this.operator = operator;
-//         this.rightVal = rightVal;
-//         this.type = 'Comparison';
-//     }
+class Function {
+    constructor(parameters, body) {
+        this.parameters = parameters;
+        this.body = body;
+    }
 
-//     accept(visitor) {
-//         visitor.
-//     }
-// }
+    accept(visitor) {
+        return visitor.visitFunctionExpr(this);
+    }
+}
 
 
 class Call {
@@ -137,4 +135,4 @@ class Literal {
 
 
 
-module.exports = { Assignment, Equality, Call, Unary, Grouping, BinaryOperation, Variable, Logic, Literal };
+module.exports = { Assignment, Equality, Function, Call, Unary, Grouping, BinaryOperation, Variable, Logic, Literal };

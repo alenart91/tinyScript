@@ -4,20 +4,44 @@ const { keywords } = require('./keywords.js');
 const { Environment } = require('./Environment.js');
 const { Callable } = require('./Callable.js');
 const { Fn } = require('./Function.js');
+const { Native } = require('./Native.js');
 
 const { readFileSync } = require('fs');
 
-const { input } = require('./p.js');
+const { input } = require('./program.js');
+
+
 
 class Interpreter {
 
     constructor() {
-        // keeps the variable environment in mem as long as the interpreter is running
-        this.environment = new Environment();
-    }
+        // keeps the variable environment in memory as long as the interpreter is running
+        this.global = new Environment();
+        this.environment = this.global;
+
+        this.global.define('log', new class extends Fn {
+
+            arity() { return 1; }
+            
+            call(interpreter, args) {
+                // console.log('in call', args[0]);
+                return console.log(args[0]);
+            }
+        });
+
+
+
+        // this.global.define('time', makeNative(0, (interpreter, args) => {
+        //     return console.log('I am time');
+        // }));
+
+
+    } 
+
+    
 
     interpret(expression) {
-        // console.log('interpret expression', expression);
+        // console.log('env', this.environment);
 
         try {
 
@@ -59,8 +83,6 @@ class Interpreter {
     visitGlobalStmt(stmt) {
 
         // get to top level of environment and declare variable there
-        // console.log('global stmt', stmt);
-        // console.log('env', this.environment);
 
         let val = null;
 
@@ -68,18 +90,20 @@ class Interpreter {
             val = this.evaluate(stmt.initializer);
         }
 
-        this.environment.defineGlobal(stmt.name, val);
+        this.environment.defineGlobal(stmt.name, val, this.global);
 
         return null;
     }
 
 
     visitFunctionStmt(stmt) {
-        console.log('in interpreter function', stmt);
-        let func = new Fn(stmt);
-
+        
+        let func = new Fn(stmt, this.environment);
+        // console.log('env in function statement', this.environment);
+        // console.log('func in stmt', func);
         // stores the identifier and function body
         this.environment.define(stmt.name, func);
+        // console.log('func statement env after define', this.environment);
 
         return null;
     }
@@ -88,15 +112,15 @@ class Interpreter {
     visitBlockStmt(stmt) {
         
         this.executeBlock(stmt.statements, new Environment(this.environment));
+
         return null;
-        // return val;
     }
 
 
     executeBlock(statements, environment) {
 
         // console.log('in execute block', statements);
-        console.log('environment', environment);
+        // console.log('environment', environment);
        
         let previous = this.environment;
         
@@ -106,6 +130,7 @@ class Interpreter {
 
             for(let i = 0; i < statements.length; i++) {
                 // console.log('beginning of block statement loop');
+                // console.log('statement', statements[i]);
 
                 this.evaluate(statements[i]);
             }
@@ -132,18 +157,25 @@ class Interpreter {
 
 
     visitLoopStmt(stmt) {
-       
+
+        // console.log('loop stmt', stmt);
+        // console.log('this env', this.environment);
         let environment = new Environment(this.environment);
 
 
         let previous = this.environment;
         this.environment = environment;
 
-        let condition =  stmt.condition != null ? this.evaluate(stmt.condition) : true;
-        let increment = stmt.increment != null ? this.evaluate(stmt.increment) : null;
+        // let init = stmt.initializer != null ? this.evaluate(stmt.initializer) : null
+        // let condition =  stmt.condition != null ? this.evaluate(stmt.condition) : true;
+        // let increment = stmt.increment != null ? this.evaluate(stmt.increment) : null;
 
-        for(stmt.initializer != null ? this.evaluate(stmt.initializer) : null; condition; increment) {
 
+        for(stmt.initializer != null ? this.evaluate(stmt.initializer) : null; 
+        stmt.condition != null ? this.evaluate(stmt.condition) : true; 
+        stmt.increment != null ? this.evaluate(stmt.increment) : null) {
+           
+            // console.log('env', this.environment, this.environment.enclave);
             try {
             this.evaluate(stmt.body);
 
@@ -153,10 +185,11 @@ class Interpreter {
                 if(statement == 'STOP') break;
             }
 
-
+            // console.log('end of loop');
         }
 
         this.environment = previous;
+        // console.log('out of loop');
         return null;
 
     }
@@ -200,6 +233,16 @@ class Interpreter {
 
     visitStopStmt(stmt) {
         throw stmt.type;
+    }
+
+
+    visitReturnStmt(stmt) {
+        // console.log('return stmt', stmt);
+        let value = null;
+
+        if(stmt.value != null) value = this.evaluate(stmt.value);
+        // console.log('return val', value);
+        throw value;
     }
 
 
@@ -262,10 +305,17 @@ class Interpreter {
             case '+': 
                 if(typeof left == 'string' && typeof right == 'string') return String(left) + String(right);
                 if(typeof left == 'number' && typeof right == 'number') return Number(left) + Number(right);
-                // allow type coercion?  throw new Error('Operands must be two numbers or two strings.');
+                // allow type coercion?  
+                throw new Error('Operands must be two numbers or two strings.');
 
-            case '/': return left / right;
-            case '*': return left * right;
+            case '/': 
+            this.checkNumberOperands(expr.operator, left, right);
+            if(right == 0 ) throw new Error('Cannot divide by zero');
+            return left / right;
+
+            case '*': 
+            this.checkNumberOperands(expr.operator, left, right);
+            return left * right;
         }
 
         return null;
@@ -273,26 +323,31 @@ class Interpreter {
 
 
     visitCallExpr(expr) {
-        console.log('in call expression', expr);
+        // console.log('in call expression env', this.environment);
+        // console.log('expr', expr);
 
         let callee = this.evaluate(expr.callee);
-        console.log('callee', callee);
+        // console.log('callee', callee);
 
         let funcArguments = [];
         for(let i = 0; i < expr.args.length; i++) {
             funcArguments.push(this.evaluate(expr.args[i]));
         }
   
-        if(!(callee instanceof Fn)) {
-            console.log('in instance of callable');
-            throw new Error('Can only call functions');
-        }
-
-        // check arity
-
-        console.log('func args', funcArguments);
+        // if(!(callee instanceof Fn)) {
+        //     // console.log('in instance of callable');
+        //     throw new Error('Can only call functions');
+        // }
 
         let func = callee;
+
+        // check arity
+        if(func.arity() != expr.args.length) {
+            throw new Error('Number of arguments in function call must be the same as the definition');
+        }
+
+        // console.log('func args', funcArguments);
+
         return func.call(this, funcArguments);
     }
 
@@ -322,6 +377,7 @@ class Interpreter {
     visitAssignmentExpr(expr) {
         // console.log('var assignment', expr);
         let value = this.evaluate(expr.value);
+        // console.log('valzee', value);
         this.environment.assign(expr.name, value);
         return value;
         
@@ -329,7 +385,7 @@ class Interpreter {
 
 
     visitVariableExpr(expr) {
-        // console.log('var expr', expr);
+        // console.log('var expr');
         return this.environment.retrieve(expr.name);
     }
 
@@ -388,15 +444,8 @@ let programTokens = tinyScript.scanInput();
 let tinyParser = new Parser(programTokens);
 // console.log(tinyParser);
 let ast = tinyParser.parse();
-// console.log(ast);
+console.log(ast);
 
 
 let myInterpreter = new Interpreter();
 console.log(myInterpreter.interpret(ast));
-
-
-
-
-// We make the field static so that successive calls to run() inside a REPL session reuse the same interpreter. 
-// That doesn’t make a difference now, but it will later when the interpreter stores global variables. 
-// Those variables should persist throughout the REPL session.

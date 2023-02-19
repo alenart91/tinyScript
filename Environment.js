@@ -5,18 +5,31 @@ class Environment {
     }
 
     define(name, value) {
+        if(this.values.has(name)) {
+            throw new Error('name already declared previously');
+        } else {
         this.values.set(name, value); 
+        }
     }
 
-    defineGlobal(name, value) {
+    defineGlobal(name, value, globalEnv) {
 
-        if(this.enclave == null) {
-            this.values.set(name, value);
-        }
+        // if(this.enclave == null) {
+        // console.log('global env', globalEnv);
 
-        if(this.enclave !== null) {
-            return this.enclave.defineGlobal(name, value);
+        if(globalEnv.values.has(name)) {
+            throw new Error('name already declared in global namespace');
+        } else {
+            globalEnv.values.set(name, value);
         }
+            
+
+
+        // }
+
+        // if(this.enclave !== null) {
+        //     return this.enclave.defineGlobal(name, value);
+        // }
     }
 
 

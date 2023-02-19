@@ -1,6 +1,6 @@
 const { Lexer } = require('./Lexer.js');
 const { keywords } = require('./keywords.js');
-const { input } = require('./p.js');
+const { input } = require('./program.js');
 
 const Expr = require('./Expression.js');
 const Stmt = require('./Statement.js');
@@ -17,7 +17,7 @@ class Parser {
 
 
     parse() {
-        // console.log(this.tokens);
+        
         while(!this.finished()) {
             this.statements.push(this.declaration());
         }
@@ -99,7 +99,7 @@ class Parser {
 
 
     fn() {
-        console.log('in function');
+       
         let name = this.consume('IDENTIFIER', 'Expected function name');
         this.consume('L_PAREN', 'Expected ( after function name');
         let params = [];
@@ -110,7 +110,6 @@ class Parser {
                     console.error(this.getCurrentToken(), `Can't have more than 100 arguments in a function`);
                 }
 
-                console.log('in do', this.getCurrentToken());
                 params.push(this.consume('IDENTIFIER', 'Expected parameter name'));
 
                 
@@ -122,16 +121,16 @@ class Parser {
         // parse function body
         this.consume('L_BRACE', 'Expect { before function body');
         let body = this.block();
-        console.log('function body', body);
+        
         return new Stmt.Function(name.value, params, body);
     }
 
 
     
     statement() {
-            // console.log('in statement', this.tokens[this.position]);
-        // try {
+           
             if(this.match('IF')) return this.ifStatement();
+            if(this.match('RETURN')) return this.returnStatement();
             if(this.match('WHILE')) return this.whileStatement();
             if(this.match('LOOP')) return this.loopStatement();
             if(this.match('CONTINUE')) return this.continueStatement();
@@ -140,11 +139,6 @@ class Parser {
             if(this.match('L_BRACE')) return new Stmt.Block(this.block());
 
             return this.expressionStatement();
-
-        // } catch(err) {
-        //     console.log('in parser error');
-        //     console.error(err.message);
-        // }
 
     }
 
@@ -246,6 +240,19 @@ class Parser {
         this.consume('SEMI', 'Expect ; after expression');
         return new Stmt.Print(value);
     
+    }
+
+
+    returnStatement() {
+        let keyword = this.getPreviousToken();
+        let value = null;
+
+        if(!this.checkTokenType('SEMI')) {
+            value = this.expression();
+        }
+
+        this.consume('SEMI', 'Expect ; after return value');
+        return new Stmt.Return(keyword, value);
     }
 
 
@@ -421,20 +428,18 @@ class Parser {
 
             if(this.match('L_PAREN')) {
                 expression = this.finishCall(expression);
-                console.log('function call', expression);
 
             } else {
                 break;
             }
         }
 
-        // console.log('call expression', expression);
         return expression;
     }
 
 
     finishCall(callee) {
-        console.log('in finish call', callee);
+        
         let args = [];
         if(!this.checkTokenType('R_PAREN')) {
             do {
@@ -581,7 +586,6 @@ class Parser {
 
 
     parseError(token, message) {
-        console.log('parser error', token, message);
         throw new Error( `${message} instead of ${token.value}`);
     }
 
@@ -604,13 +608,13 @@ class Parser {
 
 
 
-let tinyScript = new Lexer(input);
-let programTokens = tinyScript.scanInput();
+// let tinyScript = new Lexer(input);
+// let programTokens = tinyScript.scanInput();
 
 
-let tinyParser = new Parser(programTokens);
+// let tinyParser = new Parser(programTokens);
 // console.log(tinyParser.tokens);
-console.log(tinyParser.parse());
+// console.log(tinyParser.parse());
 
 // let ast = tinyParser.parse();
 // console.log('parser tokens', JSON.stringify(ast, null, 3));

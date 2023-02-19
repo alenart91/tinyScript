@@ -133,4 +133,17 @@ class Continue {
     }
 }
 
-module.exports = { Expression, Print, Declare, Global, Block, Function, If, While, Loop, Stop, Continue };
+
+
+class Return {
+    constructor(keyword, value) {
+        this.keyword = keyword;
+        this.value = value;
+    }
+
+    accept(visitor) {
+        return visitor.visitReturnStmt(this);
+    }
+}
+
+module.exports = { Expression, Print, Declare, Global, Block, Function, If, While, Loop, Stop, Continue, Return };

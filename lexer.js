@@ -1,7 +1,7 @@
 const { optable } = require('./optable.js');
 const { keywords } = require('./keywords.js');
 const { Token } = require('./Token.js');
-const { input } = require('./p.js');
+const { input } = require('./program.js');
 const { readFileSync } = require('fs');
 
 class Lexer {
@@ -198,7 +198,7 @@ class Lexer {
 
 const program = readFileSync('./source.txt', 'utf8');
 
-let tinyScript = new Lexer(input);
+// let tinyScript = new Lexer(program);
 
 // tinyScript.scanInput();
 // console.log(tinyScript);
