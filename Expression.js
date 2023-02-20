@@ -106,6 +106,17 @@ class Variable {
 }
 
 
+class List {
+    constructor(items) {
+        this.items = items;
+    }
+
+    accept(visitor) {
+        return visitor.visitListExpr(this);
+    }
+}
+
+
 class Logic {
     constructor(left, operator, right) {
         this.left = left;
@@ -135,4 +146,4 @@ class Literal {
 
 
 
-module.exports = { Assignment, Equality, Function, Call, Unary, Grouping, BinaryOperation, Variable, Logic, Literal };
+module.exports = { Assignment, Equality, Function, Call, Unary, Grouping, BinaryOperation, Variable, Logic, List, Literal };

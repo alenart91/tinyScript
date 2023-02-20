@@ -35,8 +35,8 @@ class Parser {
     declaration() {
 
         try {
-            if(this.match('DECLARE')) return this.variableDecl();
-            if(this.match('GLOBAL')) return this.variableDecl();
+            if(this.match('DECLARE', 'GLOBAL')) return this.variableDecl();
+            // if(this.match('GLOBAL')) return this.variableDecl();
             if(this.match('FUNCTION')) return this.fn();
             return this.statement();
 
@@ -51,7 +51,7 @@ class Parser {
 
     
     // looks for the next statement or declaration to parse
-    // discards tokens until it reaches one that can appear at taht specific point in a prod rule
+    // discards tokens until it reaches one that can appear at that specific point in a prod rule
     sync() {
         this.advance();
 
@@ -84,6 +84,7 @@ class Parser {
         let initializer = null;
 
         if(this.match('EQUALS')) {
+            console.log('in declare equals', this.getCurrentToken());
             initializer = this.expression();
         }
 
@@ -284,6 +285,8 @@ class Parser {
 
 
     expression() {
+        console.log('in expression');
+        console.log(this.getCurrentToken());
         return this.assignment();
     }
 
@@ -291,9 +294,9 @@ class Parser {
 
     assignment() {
         let expression = this.or();
-        // let left = this.equality();
 
         if(this.match('EQUALS')) {
+            console.log('in assignment equals');
             let equals = this.getPreviousToken().value;
             let val = this.assignment();
 
@@ -308,7 +311,7 @@ class Parser {
                 return new Expr.Assignment(name, val);
             }
 
-            // this.parseError(equals, 'Invalid assignment');
+            throw new Error('Invalid assignment');
         }
 
         return expression;
@@ -422,8 +425,11 @@ class Parser {
 
 
     call() {
+        // console.log('in call real');
         let expression = this.primary();
+        // console.log('call expression', expression, 'token', this.getCurrentToken());
 
+        // better way?
         while(true) {
 
             if(this.match('L_PAREN')) {
@@ -433,7 +439,10 @@ class Parser {
                 break;
             }
         }
+        
+        // whenever a function returns that's what pushes a node into the array
 
+        // if no paranthesis and thus no function call or arguments just retrun the expression
         return expression;
     }
 
@@ -476,8 +485,35 @@ class Parser {
         }
 
         if(this.match('IDENTIFIER')) {
+            console.log('in ident');
             return new Expr.Variable(this.getPreviousToken().value);
         }
+
+        if(this.match('L_BRACKET')) {
+
+            // give maximum Item limit?
+            let listItems = [];
+
+            if(!this.checkTokenType('R_BRACKET')) {
+
+                do {  
+                      // use expression?
+                      listItems.push(this.or());
+
+                } while(this.match('COMMA'));
+                
+            }
+
+
+            if(!this.checkTokenType('COMMA') && !this.checkTokenType('R_BRACKET')) {
+                throw new Error(`Syntax error in List after item ${this.getPreviousToken().value} on line ${this.getPreviousToken().start.line}`);
+            }
+
+            this.consume('R_BRACKET', 'Expected ] after list items');
+            return new Expr.List(listItems);
+        }
+
+
 
         if(this.match('L_PAREN')) {
             
@@ -490,7 +526,8 @@ class Parser {
             return new Expr.Grouping(left, start, end);
         }
 
-        throw new Error('Expected an expression');
+
+        throw new Error(`Expected an expression instead of ${this.getCurrentToken().value} on line ${this.getPreviousToken().start.line}`);
     }
 
 
@@ -586,11 +623,15 @@ class Parser {
 
 
     parseError(token, message) {
+        console.log('in parse error');
+        if(this.finished()) throw new Error(`${message}`);
         throw new Error( `${message} instead of ${token.value}`);
     }
 
 
 };
+
+
 
 
 // try {
