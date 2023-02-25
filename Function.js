@@ -13,19 +13,30 @@ class Fn {
 
         let environment = new Environment(this.closure);
 
-        // console.log('function environment', environment);
-        // console.log('declaration', this.declaration);
-
         for(let i = 0; i < this.declaration.params.length; i++) {
-            
+
             // allow different number of parameters and arguments
-            // if(i > args.length)
+            if(this.declaration.params.length != args.length) {
+
+                // more params
+                if(i > args.length - 1) {
+                    environment.define(this.declaration.params[i].value, null);
+                    continue;
+                }
+
+                // more arguments
+                if(i > this.declaration.params.length - 1) {
+                    break;
+                } 
+
+            }
 
             // arguments are scoped to the function body
             environment.define(this.declaration.params[i].value, args[i]);
         }
 
-        // console.log('function environment after define', environment);
+        console.log('env after loop', environment);
+
 
         try {
         interpreter.executeBlock(this.declaration.body, environment);
@@ -48,3 +59,19 @@ class Fn {
 
 
 module.exports = { Fn };
+
+
+
+
+
+// parameters
+function something(a, b) {
+    return a + b;
+}
+
+something(1, 2, 3);
+
+
+// arguments
+something(1, 2, 3);
+something(1);

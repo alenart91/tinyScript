@@ -13,7 +13,9 @@ const keywords = {
     'fn': 'FUNCTION',
     'true': 'TRUE',
     'false': 'FALSE',
-    'print': 'PRINT'
+    'print': 'PRINT',
+    'push': 'PUSH',
+    'into': 'INTO'
 };
 
 module.exports = { keywords };

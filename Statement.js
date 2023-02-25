@@ -146,4 +146,17 @@ class Return {
     }
 }
 
-module.exports = { Expression, Print, Declare, Global, Block, Function, If, While, Loop, Stop, Continue, Return };
+
+class Push {
+    constructor(name, listVal, value) {
+        this.name = name;
+        this.listVal = listVal;
+        this.value = value;
+    }
+
+    accept(visitor) {
+        return visitor.visitPushStmt(this);
+    }
+}
+
+module.exports = { Expression, Print, Declare, Global, Block, Function, If, While, Loop, Stop, Continue, Return, Push };

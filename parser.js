@@ -36,7 +36,6 @@ class Parser {
 
         try {
             if(this.match('DECLARE', 'GLOBAL')) return this.variableDecl();
-            // if(this.match('GLOBAL')) return this.variableDecl();
             if(this.match('FUNCTION')) return this.fn();
             return this.statement();
 
@@ -138,6 +137,8 @@ class Parser {
             if(this.match('STOP')) return this.stopStatement();
             if(this.match('PRINT')) return this.printStatement();
             if(this.match('L_BRACE')) return new Stmt.Block(this.block());
+
+            if(this.match('PUSH')) return this.pushStatement();
 
             return this.expressionStatement();
 
@@ -254,6 +255,21 @@ class Parser {
 
         this.consume('SEMI', 'Expect ; after return value');
         return new Stmt.Return(keyword, value);
+    }
+
+
+    pushStatement() {
+        let value = this.expression();
+        console.log('in push val', value);
+
+        this.consume('INTO', 'Expect into keyword after expression in push statement');
+        let name = this.expression();
+        console.log('name', name);
+
+        this.consume('SEMI', 'Expect ; after push statement');
+
+        return new Stmt.Push(name.name, name, value);
+
     }
 
 

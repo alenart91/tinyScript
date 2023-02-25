@@ -1,10 +1,11 @@
 const { Lexer } = require('./lexer.js');
 const { Parser } = require('./Parser.js');
-const { keywords } = require('./keywords.js');
+// const { keywords } = require('./keywords.js');
 const { Environment } = require('./Environment.js');
-const { Callable } = require('./Callable.js');
 const { Fn } = require('./Function.js');
 const { Native } = require('./Native.js');
+
+const { defineNatives } = require('./defineNatives.js');
 
 const { readFileSync } = require('fs');
 
@@ -18,25 +19,30 @@ class Interpreter {
         // keeps the variable environment in memory as long as the interpreter is running
         this.global = new Environment();
         this.environment = this.global;
+        this.nativeFunctions(Native);
 
-        this.global.define('log', new class extends Fn {
 
-            arity() { return 1; }
+
+        // this.global.define('log', new class extends Fn {
+
+        //     arity() { return 1; }
             
-            call(interpreter, args) {
-                // console.log('in call', args[0]);
-                return console.log(args[0]);
-            }
-        });
+        //     // call(interpreter, args) {
+        //     //     // console.log('in call', args[0]);
 
-
-
-        // this.global.define('time', makeNative(0, (interpreter, args) => {
-        //     return console.log('I am time');
-        // }));
+        //     //     return console.log(args[0]);
+        //     // }
+        // });
 
 
     } 
+
+
+    nativeFunctions(native) {
+        
+        // pass instance of Native class and the global env
+        defineNatives(native, this.global);
+    }
 
     
 
@@ -61,7 +67,7 @@ class Interpreter {
     
 
     visitDeclareStmt(stmt) {
-        // console.log('statement declare', stmt);
+        console.log('statement declare', stmt);
         let val = null;
 
         if(stmt.initializer != null) {
@@ -74,6 +80,7 @@ class Interpreter {
         // sets and updates variables. 
         // Doesn't need env scope because if it exists it will update it else it will create it
 
+        console.log('in declare node', val);
         this.environment.define(stmt.name, val);
 
         return null;
@@ -221,6 +228,8 @@ class Interpreter {
 
 
     visitPrintStmt(stmt) {
+        console.log('print', stmt);
+        console.log(this.environment);
         let val = this.evaluate(stmt.expression);
         return console.log(val);
     }
@@ -246,6 +255,30 @@ class Interpreter {
     }
 
 
+    visitPushStmt(stmt) {
+        console.log('in push stmt', stmt);
+
+        // should I even evalute it?
+        let item = this.evaluate(stmt.value);
+        // let item = stmt.value;
+
+        let list = this.evaluate(stmt.listVal);
+        console.log('list', list);
+
+        
+
+        list.push(item);
+        console.log('updated', list);
+        // update environment
+        console.log(stmt.name, list);
+        this.environment.assign(stmt.name, list);
+
+        console.log('environment after pushing item', this.environment);
+
+        return item;
+    }
+
+
 
     visitLogicalExpr(expr) {
        
@@ -261,6 +294,25 @@ class Interpreter {
         }
 
         return this.evaluate(expr.right);
+    }
+
+
+    visitListExpr(expr) {
+        console.log('in list', expr);
+
+        // let evalArray = expr.items.map((item) => {
+        //     console.log('item', item);
+        //     return this.evaluate(item);
+        // });
+
+
+        expr.items.forEach((item, index, array) => {
+            // console.log('item', item);
+            array[index] = this.evaluate(item);
+        });
+        
+        return expr.items;
+
     }
 
 
@@ -323,30 +375,19 @@ class Interpreter {
 
 
     visitCallExpr(expr) {
-        // console.log('in call expression env', this.environment);
-        // console.log('expr', expr);
 
         let callee = this.evaluate(expr.callee);
-        // console.log('callee', callee);
 
         let funcArguments = [];
         for(let i = 0; i < expr.args.length; i++) {
             funcArguments.push(this.evaluate(expr.args[i]));
         }
   
-        // if(!(callee instanceof Fn)) {
-        //     // console.log('in instance of callable');
-        //     throw new Error('Can only call functions');
-        // }
-
-        let func = callee;
-
-        // check arity
-        if(func.arity() != expr.args.length) {
-            throw new Error('Number of arguments in function call must be the same as the definition');
+        if(!(callee instanceof Fn)) {
+            throw new Error('Can only call functions');
         }
 
-        // console.log('func args', funcArguments);
+        let func = callee;
 
         return func.call(this, funcArguments);
     }
@@ -392,7 +433,8 @@ class Interpreter {
 
     // We rely on this helper method which simply sends the expression back into the interpreter’s visitor implementation
     evaluate(expr) {
-        
+        // error for trying to evaluate null?
+        console.log('in evaluate', expr);
         return expr.accept(this);
   }
 
@@ -438,7 +480,7 @@ class Interpreter {
 const program = readFileSync('./source.txt', 'utf8');
 // console.log('program', program);
 
-let tinyScript = new Lexer(input);
+let tinyScript = new Lexer(program);
 let programTokens = tinyScript.scanInput();
 
 let tinyParser = new Parser(programTokens);
@@ -449,3 +491,6 @@ console.log(ast);
 
 let myInterpreter = new Interpreter();
 console.log(myInterpreter.interpret(ast));
+
+
+module.exports = { Interpreter };

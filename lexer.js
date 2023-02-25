@@ -198,10 +198,10 @@ class Lexer {
 
 const program = readFileSync('./source.txt', 'utf8');
 
-// let tinyScript = new Lexer(program);
+let tinyScript = new Lexer(program);
 
-// tinyScript.scanInput();
-// console.log(tinyScript);
+tinyScript.scanInput();
+console.log(tinyScript);
 // console.log(JSON.stringify(tinyScript, null, 2));
 
 module.exports = { Lexer }; 
